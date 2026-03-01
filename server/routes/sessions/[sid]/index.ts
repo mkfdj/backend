@@ -39,18 +39,13 @@ export default defineEventHandler(async event => {
     const body = await readBody(event);
     const validatedBody = updateSessionSchema.parse(body);
 
-    if (validatedBody.deviceName) {
-      await prisma.sessions.update({
-        where: { id: sessionId },
-        data: {
-          device: validatedBody.deviceName,
-        },
-      });
-    }
-
-    const updatedSession = await prisma.sessions.findUnique({
-      where: { id: sessionId },
-    });
+    // Use update return value directly — no redundant findUnique
+    const updatedSession = validatedBody.deviceName
+      ? await prisma.sessions.update({
+          where: { id: sessionId },
+          data: { device: validatedBody.deviceName },
+        })
+      : targetedSession;
 
     return {
       id: updatedSession.id,
@@ -65,16 +60,7 @@ export default defineEventHandler(async event => {
   }
 
   if (event.method === 'DELETE') {
-    const sid = event.context.params?.sid;
-    const sessionExists = await prisma.sessions.findUnique({
-      where: { id: sid },
-    });
-
-    if (!sessionExists) {
-      return { success: true };
-    }
-    const session = await useAuth().getSessionAndBump(sid);
-
+    // targetedSession already validated above — no redundant findUnique or session bump needed
     await prisma.sessions.delete({
       where: { id: sessionId },
     });

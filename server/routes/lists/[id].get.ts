@@ -3,6 +3,7 @@ import { prisma } from '#imports';
 export default defineEventHandler(async event => {
   const id = event.context.params?.id;
   const listInfo = await prisma.lists.findUnique({
+    relationLoadStrategy: 'join',
     where: {
       id: id,
     },

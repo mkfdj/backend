@@ -144,27 +144,14 @@ export default defineEventHandler(async event => {
     if (body.seasonId) whereClause.season_id = body.seasonId;
     if (body.episodeId) whereClause.episode_id = body.episodeId;
 
-    const itemsToDelete = await prisma.watch_history.findMany({
-      where: whereClause,
-    });
-
-    if (itemsToDelete.length === 0) {
-      return {
-        success: true,
-        count: 0,
-        tmdbId,
-        episodeId: body.episodeId,
-        seasonId: body.seasonId,
-      };
-    }
-
-    await prisma.watch_history.deleteMany({
+    // Use deleteMany return count directly — no redundant findMany
+    const { count } = await prisma.watch_history.deleteMany({
       where: whereClause,
     });
 
     return {
       success: true,
-      count: itemsToDelete.length,
+      count,
       tmdbId,
       episodeId: body.episodeId,
       seasonId: body.seasonId,

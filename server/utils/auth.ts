@@ -40,13 +40,19 @@ export function useAuth() {
     const now = new Date();
     const expiryDate = new Date(now.getTime() + SESSION_EXPIRY_MS);
 
-    // Cleanup existing session for this device
-    await prisma.sessions.deleteMany({
-      where: { user, device },
-    });
-
-    return await prisma.sessions.create({
-      data: {
+    // Atomic upsert — backed by @@unique([user, device]) in schema
+    return await prisma.sessions.upsert({
+      where: {
+        sessions_user_device_unique: { user, device },
+      },
+      update: {
+        id: uuidv7(),
+        user_agent: userAgent,
+        created_at: now,
+        accessed_at: now,
+        expires_at: expiryDate,
+      },
+      create: {
         id: uuidv7(),
         user,
         device,

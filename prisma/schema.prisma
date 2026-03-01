@@ -51,6 +51,7 @@ model lists {
   public      Boolean      @default(false)
   list_items  list_items[]
 
+  @@unique([user_id, name], map: "lists_user_id_name_unique")
   @@index([user_id], map: "lists_user_id_index")
 }
 
@@ -86,6 +87,7 @@ model sessions {
   device      String
   user_agent  String
 
+  @@unique([user, device], map: "sessions_user_device_unique")
   @@index([user], type: Hash)
 }
 

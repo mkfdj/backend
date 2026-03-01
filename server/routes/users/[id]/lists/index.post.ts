@@ -40,47 +40,57 @@ export default defineEventHandler(async event => {
 
   const validatedBody = createListSchema.parse(parsedBody);
 
-  const result = await prisma.$transaction(async tx => {
-    const existing = await tx.lists.findFirst({
-      where: { user_id: userId, name: validatedBody.name }
+  try {
+    const result = await prisma.$transaction(async tx => {
+      // App-level guard for a clean 409 message
+      const existing = await tx.lists.findFirst({
+        where: { user_id: userId, name: validatedBody.name },
+      });
+
+      if (existing) {
+        throw createError({ statusCode: 409, message: 'A list with this name already exists' });
+      }
+
+      const now = new Date();
+      const newList = await tx.lists.create({
+        data: {
+          id: uuidv7(),
+          user_id: userId,
+          name: validatedBody.name,
+          description: validatedBody.description || null,
+          public: validatedBody.public || false,
+          updated_at: now,
+        },
+      });
+
+      if (validatedBody.items && validatedBody.items.length > 0) {
+        await tx.list_items.createMany({
+          data: validatedBody.items.map(item => ({
+            id: uuidv7(),
+            list_id: newList.id,
+            tmdb_id: item.tmdb_id,
+            type: item.type,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      return tx.lists.findUnique({
+        relationLoadStrategy: 'join',
+        where: { id: newList.id },
+        include: { list_items: true },
+      });
     });
 
-    if (existing) {
+    return {
+      list: result,
+      message: 'List created successfully',
+    };
+  } catch (err: any) {
+    // DB-level safety net: catch unique constraint violation from @@unique([user_id, name])
+    if (err.code === 'P2002') {
       throw createError({ statusCode: 409, message: 'A list with this name already exists' });
     }
-
-    const now = new Date();
-    const newList = await tx.lists.create({
-      data: {
-        id: uuidv7(),
-        user_id: userId,
-        name: validatedBody.name,
-        description: validatedBody.description || null,
-        public: validatedBody.public || false,
-        updated_at: now,
-      },
-    });
-
-    if (validatedBody.items && validatedBody.items.length > 0) {
-      await tx.list_items.createMany({
-        data: validatedBody.items.map(item => ({
-          id: uuidv7(),
-          list_id: newList.id,
-          tmdb_id: item.tmdb_id,
-          type: item.type, // Type is mapped here
-        })),
-        skipDuplicates: true,
-      });
-    }
-
-    return tx.lists.findUnique({
-      where: { id: newList.id },
-      include: { list_items: true },
-    });
-  });
-
-  return {
-    list: result,
-    message: 'List created successfully',
-  };
+    throw err;
+  }
 });
