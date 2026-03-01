@@ -11,7 +11,7 @@ const pool =
   globalForPrisma.pool ||
   new Pool({
     connectionString: process.env.DATABASE_URL,
-    max: parseInt(process.env.DB_POOL_MAX || '1000', 10),
+    max: Math.max(1, parseInt(process.env.DB_POOL_MAX, 10) || 30),
     connectionTimeoutMillis: 10000,
     idleTimeoutMillis: 300000,
   });

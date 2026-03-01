@@ -58,7 +58,7 @@ export default defineEventHandler(async event => {
       // Accept single object (normal playback) or array (e.g. user import)
       const bodySchema = z.union([
         watchHistoryItemSchema,
-        z.array(watchHistoryItemSchema),
+        z.array(watchHistoryItemSchema).max(1000),
       ]);
       const parsed = bodySchema.parse(body);
       const items = Array.isArray(parsed) ? parsed : [parsed];

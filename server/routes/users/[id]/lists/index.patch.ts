@@ -51,7 +51,9 @@ export default defineEventHandler(async event => {
     });
   }
 
-  const result = await prisma.$transaction(async tx => {
+  let result;
+  try {
+    result = await prisma.$transaction(async tx => {
     if (
       validatedBody.name ||
       validatedBody.description !== undefined ||
@@ -106,6 +108,12 @@ export default defineEventHandler(async event => {
       include: { list_items: true },
     });
   });
+  } catch (err: any) {
+    if (err.code === 'P2002') {
+      throw createError({ statusCode: 409, message: 'A list with this name already exists' });
+    }
+    throw err;
+  }
 
   return {
     list: result,
