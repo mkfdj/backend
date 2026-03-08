@@ -7,11 +7,7 @@ const log = scopedLogger('user-settings');
 
 const userSettingsSchema = z.object({
   applicationTheme: z.string().nullable().optional(),
-  customTheme: z.object({
-    primary: z.string(),
-    secondary: z.string(),
-    tertiary: z.string(),
-  }).nullable().optional(),
+  customTheme: z.any().nullable().optional(),
   applicationLanguage: z.string().optional().default('en'),
   defaultSubtitleLanguage: z.string().nullable().optional(),
   proxyUrls: z.array(z.string()).nullable().optional(),
