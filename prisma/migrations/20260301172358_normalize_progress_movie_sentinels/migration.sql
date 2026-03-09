@@ -13,6 +13,17 @@ WHERE a."tmdb_id" = b."tmdb_id"
   AND b."season_id" = E'\n'
   AND b."episode_id" = E'\n';
 
+-- Deduplicate multiple NULL rows for the same (tmdb_id, user_id): keep the most recent
+DELETE FROM "progress_items" a
+USING "progress_items" b
+WHERE a."tmdb_id" = b."tmdb_id"
+  AND a."user_id" = b."user_id"
+  AND a."season_id" IS NULL
+  AND a."episode_id" IS NULL
+  AND b."season_id" IS NULL
+  AND b."episode_id" IS NULL
+  AND a."updated_at" < b."updated_at";
+
 -- Now convert remaining NULL rows to '\n' (covers both fully-NULL and mixed cases)
 UPDATE "progress_items"
 SET "season_id" = E'\n'
@@ -35,6 +46,17 @@ WHERE a."tmdb_id" = b."tmdb_id"
   AND a."episode_id" IS NULL
   AND b."season_id" = E'\n'
   AND b."episode_id" = E'\n';
+
+-- Deduplicate multiple NULL rows for the same (tmdb_id, user_id): keep the most recent
+DELETE FROM "watch_history" a
+USING "watch_history" b
+WHERE a."tmdb_id" = b."tmdb_id"
+  AND a."user_id" = b."user_id"
+  AND a."season_id" IS NULL
+  AND a."episode_id" IS NULL
+  AND b."season_id" IS NULL
+  AND b."episode_id" IS NULL
+  AND a."watched_at" < b."watched_at";
 
 -- Convert remaining NULL rows to '\n'
 UPDATE "watch_history"

@@ -46,9 +46,7 @@ export function useAuth() {
         user_device: { user, device },
       },
       update: {
-        id: uuidv7(),
         user_agent: userAgent,
-        created_at: now,
         accessed_at: now,
         expires_at: expiryDate,
       },
